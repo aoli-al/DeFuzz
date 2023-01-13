@@ -8,4 +8,6 @@
  */
 
 rootProject.name = 'DeFuzz'
-include('app', 'list', 'utilities')
+include('fuzzer', 'native')
+include 'examples'
+
