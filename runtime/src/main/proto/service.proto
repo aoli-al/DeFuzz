@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "al.aoli.defuzz.runtime";
+option java_outer_classname = "BreakPointAnalyzerService";
+
+package defuzz;
+
+service BreakPointAnalyzer {
+  rpc GetBreakPoints (BreakPointRequest) returns (BreakPointResponse) {}
+}
+
+message BreakPointRequest {
+  bytes classData = 1;
+}
+
+
+message BreakPoint {
+  string className = 1;
+  string methodName = 2;
+  string methodDescriptor = 3;
+  bool isStatic = 4;
+  int32 location = 5;
+}
+
+message BreakPointResponse {
+  repeated BreakPoint breakpoints = 1;
+}
+

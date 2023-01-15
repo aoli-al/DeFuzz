@@ -3,7 +3,8 @@
  */
 
 plugins {
-    id 'al.aoli.defuzz.kotlin-library-conventions'
+    id 'al.aoli.defuzz.kotlin-application-conventions'
+    id "io.github.tomtzook.gradle-cmake" version "1.2.2"
 }
 
 dependencies {
@@ -13,5 +14,32 @@ dependencies {
     implementation group: 'org.junit.platform', name: 'junit-platform-runner', version: '1.9.2'
     implementation group: 'com.pholser', name: 'junit-quickcheck-core', version: '1.0'
     implementation "org.eclipse.collections:eclipse-collections:11.1.0"
+
+    implementation group: 'edu.berkeley.cs.jqf', name: 'jqf-examples', version: '2.0-SNAPSHOT'
 }
 
+
+
+task fuzzBcel(type: JavaExec) {
+    var nat= project(":native")
+    classpath "${buildDir}/libs/${project.name}.jar"
+    mainClass = "al.aoli.defuzz.fuzzer.cli.MainKt"
+    jvmArgs "-Xcheck:jni"
+    jvmArgs "-agentpath:${nat.buildDir}/cmake/agent/${machines.host.getName()}/cpp/lib${nat.name}.dylib"
+    args "edu.berkeley.cs.jqf.examples.bcel.ParserTest", "testWithGenerator"
+    dependsOn jar
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+    }
+
+}

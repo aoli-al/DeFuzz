@@ -1,0 +1,58 @@
+
+plugins {
+    id 'al.aoli.defuzz.kotlin-library-conventions'
+    id "com.google.protobuf" version "0.9.2"
+}
+
+apply plugin: 'com.google.protobuf'
+
+group 'al.aoli.defuzz.runtime'
+version 'unspecified'
+
+repositories {
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.3'
+    implementation group: 'org.ow2.asm', name: 'asm-commons', version: '9.3'
+    implementation group: 'org.ow2.asm', name: 'asm-analysis', version: '9.3'
+    implementation group: 'io.github.microutils', name: 'kotlin-logging-jvm', version: '3.0.2'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
+    api("io.grpc:grpc-stub:${rootProject.ext["grpcVersion"]}")
+    api("io.grpc:grpc-netty:${rootProject.ext["grpcVersion"]}")
+    api("io.grpc:grpc-protobuf:${rootProject.ext["grpcVersion"]}")
+    api("com.google.protobuf:protobuf-java-util:${rootProject.ext["protobufVersion"]}")
+    api("com.google.protobuf:protobuf-kotlin:${rootProject.ext["protobufVersion"]}")
+    api("io.grpc:grpc-kotlin-stub:${rootProject.ext["grpcKotlinVersion"]}")
+}
+
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${rootProject.ext["protobufVersion"]}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${rootProject.ext["grpcVersion"]}"
+        }
+        grpckt {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${rootProject.ext["grpcKotlinVersion"]}:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                grpc
+                grpckt
+            }
+            it.builtins {
+                kotlin
+                cpp
+            }
+        }
+    }
+
+}
+
+//protobuf {

@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+ext["grpcVersion"] = "1.46.0"
+ext["protobufVersion"] = "3.20.1"
+ext["grpcKotlinVersion"] = "1.3.0"
+
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(16))
+    }
+}

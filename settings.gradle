@@ -10,4 +10,5 @@
 rootProject.name = 'DeFuzz'
 include('fuzzer', 'native')
 include 'examples'
+include 'runtime'
 
