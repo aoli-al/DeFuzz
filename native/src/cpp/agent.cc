@@ -10,64 +10,63 @@
 #include "runtime.hpp"
 
 jvmtiEnv *jvmti;
+std::mutex mu;
 
 static defuzz::BreakPointClient *client;
 std::map<std::string, defuzz::BreakPointResponse> breakpoints;
 
-void JNICALL ClassLoad(jvmtiEnv *jvmti_env, JNIEnv *jni_env, jthread thread, jclass clazz)
+void JNICALL ClassPrepare(jvmtiEnv *jvmti_env, JNIEnv *jni_env, jthread thread, jclass clazz)
 {
     char *signature;
     jvmti_env->GetClassSignature(clazz, &signature, NULL);
     std::string sig = signature;
     jvmti_env->Deallocate((unsigned char *)signature);
-    PLOG_INFO << "Class loaded: " << sig;
-    if (breakpoints.find(sig) != breakpoints.end()) {
-        PLOG_INFO << "break points found for class: " << sig;
-        for (auto breakpoint : breakpoints[sig].breakpoints())
-        {
-            PLOG_INFO << "Breakpoint: " << breakpoint.classname() << " " << breakpoint.methodname() << " " << breakpoint.methoddescriptor() << " " << breakpoint.location();
-            if (breakpoint.isstatic()) {
-                jmethodID method = jni_env->GetStaticMethodID(clazz, breakpoint.methodname().c_str(), breakpoint.methoddescriptor().c_str());
-            } else {
-                jmethodID method = jni_env->GetMethodID(clazz, breakpoint.methodname().c_str(), breakpoint.methoddescriptor().c_str());
+    PLOG_INFO << "ClassPrepare entered:" << sig;
 
-            // jvmti_env->SetBreakpoint(method, breakpoint.location());
-            }
+    defuzz::BreakPointResponse response;
+    {
+        std::unique_lock<std::mutex> lock(mu);
+        if (breakpoints.find(sig) != breakpoints.end())
+        {
+            response = breakpoints[sig];
+            breakpoints.erase(sig);
         }
     }
-    breakpoints.erase(sig);
+    for (auto breakpoint : response.breakpoints())
+    {
+        PLOG_INFO << "Set breakpoint: " << breakpoint.classname() << " " << breakpoint.methodname() << " " << breakpoint.methoddescriptor() << " " << breakpoint.location();
+        if (breakpoint.isstatic())
+        {
+            jmethodID method = jni_env->GetStaticMethodID(clazz, breakpoint.methodname().c_str(), breakpoint.methoddescriptor().c_str());
+            jvmti_env->SetBreakpoint(method, breakpoint.location());
+        }
+        else
+        {
+            jmethodID method = jni_env->GetMethodID(clazz, breakpoint.methodname().c_str(), breakpoint.methoddescriptor().c_str());
+            jvmti_env->SetBreakpoint(method, breakpoint.location());
+        }
+    }
 }
 
 void JNICALL ClassFileLoadHook(jvmtiEnv *jvmti_env, JNIEnv *jni_env, jclass class_being_redefined, jobject loader, const char *name, jobject protection_domain, jint class_data_len, const unsigned char *class_data, jint *new_class_data_len, unsigned char **new_class_data)
 {
-    if (!fuzzer_started) {
+    PLOG_INFO << "ClassFileLoadHook entered: " << name;
+    if (!fuzzer_started)
+    {
         return;
     }
     std::string class_name = "L" + std::string(name) + ";";
-    PLOG_INFO << "Class file loaded: " << class_name;
-    if (class_name.starts_with("al/aoli/defuzz")) {
+    if (!class_name.starts_with("Lorg/apache/bcel"))
+    {
         return;
     }
 
-    if (auto response = client->GetBreakPoints(class_data, class_data_len)) {
-        PLOG_INFO << "Breakpoints found for class: " << response->breakpoints_size();
+    if (auto response = client->GetBreakPoints(class_data, class_data_len))
+    {
+        std::unique_lock<std::mutex> lock(mu);
         breakpoints[class_name] = *response;
-        // for (auto breakpoint : (*response).breakpoints())
-        // {
-        //     PLOG_INFO << "Breakpoint: " << breakpoint.classname() << " " << breakpoint.methodname() << " " << breakpoint.methoddescriptor() << " " << breakpoint.location();
-        //     static jclass runtime_class = jni_env->FindClass(breakpoint.classname().c_str());
-        //     static jmethodID method = jni_env->GetStaticMethodID(runtime_class, breakpoint.methodname().c_str(), breakpoint.methoddescriptor().c_str());
-        //     jvmti_env->SetBreakpoint(method, breakpoint.location());
-        // }
     }
 }
-
-
-void JNICALL Breakpoint(jvmtiEnv *jvmti_env, JNIEnv *jni_env, jthread thread, jmethodID method, jlocation location)
-{
-    PLOG_INFO << "Breakpoint triggered " << method << " " << location;
-}
-
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *vm, char *options, void *reserved)
 {
@@ -81,16 +80,17 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *vm, char *options, void *reserved)
 
     jvmtiEventCallbacks callbacks = {0};
     callbacks.ClassFileLoadHook = &ClassFileLoadHook;
-    callbacks.ClassLoad = &ClassLoad;
+    callbacks.ClassPrepare = &ClassPrepare;
     callbacks.Breakpoint = &Breakpoint;
     jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks));
     jvmti->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
     jvmti->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_BREAKPOINT, NULL);
-    jvmti->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_LOAD, NULL);
+    jvmti->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
+    jvmti->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_PREPARE, NULL);
 
     static plog::ColorConsoleAppender<plog::FuncMessageFormatter>
         console_appender;
-    plog::init(plog::info, &console_appender);
+    plog::init(plog::error, &console_appender);
 
     PLOG_INFO << "Agent loaded";
 

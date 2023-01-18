@@ -1,6 +1,5 @@
-package al.aoli.defuzz.fuzzer.runtime
+package al.aoli.defuzz.runtime
 
-import al.aoli.defuzz.runtime.BreakPoint
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes

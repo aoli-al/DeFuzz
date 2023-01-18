@@ -1,7 +1,7 @@
-package al.aoli.defuzz.fuzzer.runtime
+package al.aoli.defuzz.runtime
 
 import al.aoli.defuzz.runtime.BreakPoint
-import al.aoli.defuzz.runtime.BreakPointResponse
+import al.aoli.defuzz.runtime.BreakPointClassReader
 import org.objectweb.asm.ConstantDynamic
 import org.objectweb.asm.Handle
 import org.objectweb.asm.Label

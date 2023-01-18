@@ -1,7 +1,5 @@
 package al.aoli.defuzz.runtime
 
-import al.aoli.defuzz.fuzzer.runtime.BreakPointClassReader
-import al.aoli.defuzz.fuzzer.runtime.BreakPointClassVisitor
 import io.grpc.ServerBuilder
 import mu.KotlinLogging
 
@@ -34,7 +32,7 @@ class Service(val port: Int) {
             val classReader = BreakPointClassReader(request.classData.toByteArray())
             val classVisitor = BreakPointClassVisitor(classReader);
             classReader.accept(classVisitor, 0)
-            logger.info { "Breakpoints identified: ${classVisitor.breakPoints.size}" }
+            logger.info { "Breakpoints identified ---- ${classVisitor.className}: ${classVisitor.breakPoints.size}" }
             return BreakPointResponse.newBuilder()
                 .addAllBreakpoints(classVisitor.breakPoints)
                 .build()

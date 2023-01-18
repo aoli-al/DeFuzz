@@ -8,7 +8,7 @@ import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList
 class DeFuzzCoverage: ICoverage<DeFuzzCounter> {
     val counter = DeFuzzCounter()
     override fun size(): Int {
-        return (1 shl 8)
+        return 64 * 1024 - 1;
     }
 
     override fun getNonZeroCount(): Int {
@@ -19,11 +19,15 @@ class DeFuzzCoverage: ICoverage<DeFuzzCounter> {
         return IntArrayList()
     }
 
-    override fun computeNewCoverage(p0: ICoverage<*>?): IntList {
-        return IntArrayList()
+    override fun computeNewCoverage(that: ICoverage<*>): IntList {
+        if (that !is DeFuzzCoverage) {
+            return IntArrayList()
+        }
+        return this.counter.computeNewCoverage(that.counter)
     }
 
     override fun clear() {
+        this.counter.clear()
     }
 
     override fun updateBits(that: ICoverage<*>?): Boolean {
@@ -32,9 +36,9 @@ class DeFuzzCoverage: ICoverage<DeFuzzCounter> {
         }
         synchronized(this.counter) {
             synchronized(that.counter) {
+                return this.counter.updateBits(that.counter) != 0
             }
         }
-        return false
     }
 
     override fun nonZeroHashCode(): Int {
@@ -47,9 +51,5 @@ class DeFuzzCoverage: ICoverage<DeFuzzCounter> {
 
     override fun copy(): ICoverage<DeFuzzCounter> {
         return this
-    }
-
-    companion object {
-        var currentIndex = 0
     }
 }

@@ -9,6 +9,7 @@ cmake {
     targets {
         agent {
             cmakeLists.set(file('src/CMakeLists.txt'))
+            cmakeArgs.add("-DCMAKE_BUILD_TYPE=Release")
             targetMachines.add(machines.host)
         }
     }

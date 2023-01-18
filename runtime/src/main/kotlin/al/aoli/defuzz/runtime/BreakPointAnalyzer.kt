@@ -1,4 +1,4 @@
-package al.aoli.defuzz.fuzzer.runtime
+package al.aoli.defuzz.runtime
 
 import org.objectweb.asm.ClassReader
 

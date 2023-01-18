@@ -14,6 +14,9 @@ dependencies {
     implementation group: 'org.junit.platform', name: 'junit-platform-runner', version: '1.9.2'
     implementation group: 'com.pholser', name: 'junit-quickcheck-core', version: '1.0'
     implementation "org.eclipse.collections:eclipse-collections:11.1.0"
+    implementation "org.hamcrest:hamcrest-library:2.2"
+    implementation group: 'io.github.microutils', name: 'kotlin-logging-jvm', version: '3.0.2'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.6'
 
     implementation group: 'edu.berkeley.cs.jqf', name: 'jqf-examples', version: '2.0-SNAPSHOT'
 }
@@ -24,9 +27,9 @@ task fuzzBcel(type: JavaExec) {
     var nat= project(":native")
     classpath "${buildDir}/libs/${project.name}.jar"
     mainClass = "al.aoli.defuzz.fuzzer.cli.MainKt"
-    jvmArgs "-Xcheck:jni"
     jvmArgs "-agentpath:${nat.buildDir}/cmake/agent/${machines.host.getName()}/cpp/lib${nat.name}.dylib"
-    args "edu.berkeley.cs.jqf.examples.bcel.ParserTest", "testWithGenerator"
+    args "edu.berkeley.cs.jqf.examples.bcel.ParserTest", "testWithGenerator", "fuzzresult"
+    standardOutput = new ByteArrayOutputStream()
     dependsOn jar
 }
 
