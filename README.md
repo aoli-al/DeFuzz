@@ -1,2 +1,2 @@
 # DeFuzz
-DeFuzz: fuzz your application without instrumenting it!
+DeFuzz: fuzz your application without instrumentation!
